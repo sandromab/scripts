@@ -1,0 +1,75 @@
+#!/bin/bash
+
+sudo -i
+
+sudo timedatectl set-timezone America/Sao_Paulo
+
+sudo apt update -y && apt upgrade -y && apt autoremove -y 
+
+sudo fallocate -l 3G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+sudo swapon --show
+sudo cp /etc/fstab /etc/fstab.bak
+sudo echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+echo "Include /etc/ssh/sshd_config.d/*.conf" > /etc/ssh/sshd_config
+echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+echo "ChallengeResponseAuthentication no" >> /etc/ssh/sshd_config
+echo "UsePAM yes" >> /etc/ssh/sshd_config
+echo "X11Forwarding yes" >> /etc/ssh/sshd_config
+echo "PrintMotd no" >> /etc/ssh/sshd_config
+echo "AcceptEnv LANG LC_*" >> /etc/ssh/sshd_config
+echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+echo "Subsystem       sftp    /usr/lib/openssh/sftp-server" >> /etc/ssh/sshd_config
+sudo service ssh restart
+
+sudo ls -l /dev/ttyACM0
+
+sudo ls -l /dev/serial/by-id
+
+sudo curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+
+sudo apt-get install -y nodejs git make g++ gcc
+
+sudo git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git /opt/zigbee2mqtt
+
+cd /opt/zigbee2mqtt  
+
+sudo npm install -g npm@8.13.2 
+
+sudo npm ci  
+
+echo "homeassistant: true" > /opt/zigbee2mqtt/data/configuration.yaml
+echo "permit_join: true" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "mqtt:" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "  base_topic: zigbee2mqtt" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "  server: 'mqtt://localhost'" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "  user: 'my_user'" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "  password: 'my_password'" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "frontend: true" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "serial:" >> /opt/zigbee2mqtt/data/configuration.yaml
+echo "  port: /dev/ttyACM0" >> /opt/zigbee2mqtt/data/configuration.yaml
+
+echo "[Unit]" > /etc/systemd/system/zigbee2mqtt.service
+echo "Description=zigbee2mqtt" >> /etc/systemd/system/zigbee2mqtt.service
+echo "After=network.target" >> /etc/systemd/system/zigbee2mqtt.service
+echo "[Service]" >> /etc/systemd/system/zigbee2mqtt.service
+echo "ExecStart=/usr/bin/npm start" >> /etc/systemd/system/zigbee2mqtt.service
+echo "WorkingDirectory=/opt/zigbee2mqtt" >> /etc/systemd/system/zigbee2mqtt.service
+echo "StandardOutput=inherit" >> /etc/systemd/system/zigbee2mqtt.service
+echo "StandardError=inherit" >> /etc/systemd/system/zigbee2mqtt.service
+echo "Restart=always" >> /etc/systemd/system/zigbee2mqtt.service
+echo "RestartSec=10s" >> /etc/systemd/system/zigbee2mqtt.service
+echo "User=root" >> /etc/systemd/system/zigbee2mqtt.service
+echo "[Install]" >> /etc/systemd/system/zigbee2mqtt.service
+echo "WantedBy=multi-user.target" >> /etc/systemd/system/zigbee2mqtt.service
+
+cd /etc/systemd/system/zigbee2mqtt.service
+sudo cp zigbee2mqtt.service /lib/systemd/system/
+sudo systemctl start zigbee2mqtt
+sudo systemctl enable zigbee2mqtt.service
+cd /opt/zigbee2mqtt
+npm start
