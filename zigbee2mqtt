@@ -38,9 +38,11 @@ sudo git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git /opt/zigbee2m
 
 cd /opt/zigbee2mqtt  
 
-sudo npm install -g npm@8.13.2 
+sudo npm ci
 
-sudo npm ci  
+sudo npm install 
+
+sudo -g npm@8.13.2 
 
 echo "homeassistant: true" > /opt/zigbee2mqtt/data/configuration.yaml
 echo "permit_join: true" >> /opt/zigbee2mqtt/data/configuration.yaml
